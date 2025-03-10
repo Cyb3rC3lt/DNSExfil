@@ -11,7 +11,10 @@ DNSExfil has two sides:
   - `dnsexfil.cs`: a C# script that can be compiled with `csc.exe` to provide a Windows managed executable using this: C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /unsafe /reference:System.IO.Compression.dll /out:dnsexfil.exe dnsexfil.cs
   - `dnsexfil.ps1`: a PowerShell script providing the exact same functionnalities by wrapping the DNSExfil assembly
 
-In order for the whole thing to work **you must own a domain name** and set the DNS record (NS) for that domain to point to the server that will run the `dnsexfil.py` server side.
+In order for the whole thing to work **you must own a domain name** and set the DNS record (NS) for that domain to point to the server that will run the `dnsexfil.py` server side like below.
+The A record content is the IP of your Cloud DNS server where dnsexfil.py is running and the NS content is the domain name of the same Cloud box.
+
+<img src="https://github.com/Cyb3rC3lt/DNSExfil/blob/master/images/dnsentries.jpg" width="600">
 
 Features
 ----------------------

